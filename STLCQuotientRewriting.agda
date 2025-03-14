@@ -30,6 +30,7 @@ data _≐_ {A : Set ℓ} (x : A) : A → Prop ℓ where
 {-# BUILTIN REWRITE _≐_ #-}
 {-# BUILTIN REWRITE _≡_ #-}
 
+
 postulate
   transportR : (P : X → Set ℓ) → x ≐ y → P x → P y
   transportR-refl : transportR P refl x ≡ x
