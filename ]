@@ -1,4 +1,4 @@
-{-# OPTIONS --rewriting --prop --backtracking-instance-search #-}
+{-# OPTIONS --rewriting --prop #-}
 
 open import Agda.Primitive
 open import Agda.Builtin.Bool
@@ -40,8 +40,7 @@ variable
   σ σ₀ σ₁ σ₂ δ δ₀ δ₁ δ₂ ν ν₁ ν₂ : Sub _ _
 
 infixr 7 _⇒_
-infixl 3 _,_∶_
-infixl 3 _,_
+infixl 4 _,_
 infixr 5 _∘_
 infix 5 _[_]
 
@@ -65,6 +64,11 @@ data Tm where
   q : Tm (Γ , s ∶ A) A
   lam  : (s : String) → Tm (Γ , s ∶ A) B → Tm Γ (A ⇒ B)
   app  : Tm Γ (A ⇒ B) → Tm Γ A → Tm Γ B
+
+infixl 5 _!_
+
+_!_ : Tm Γ (A ⇒ B) → Tm Γ A → Tm Γ B
+f ! x = app f x
 
 data Tm~ where
   rfl  : Tm~ t t
@@ -96,7 +100,7 @@ data Sub~ where
   εη  : Sub~ σ ε
   idl : Sub~ (id ∘ σ) σ
   idr : Sub~ (σ ∘ id) σ
-  ass : Sub~ ((σ ∘ δ) ∘ ν) (σ ∘ δ ∘ ν)
+  ass : Sub~ (σ ∘ δ ∘ ν) ((σ ∘ δ) ∘ ν)
   p∘  : Sub~ (p {s = s} ∘ (σ , t)) σ
   pq  : Sub~ (p , q) (id {Γ , s ∶ A})
   ,∘  : Sub~ ((_,_ {s = s} σ t) ∘ δ) (σ ∘ δ , t [ δ ])
@@ -125,7 +129,7 @@ q[]' = q[]
 [id]' : Tm~ (t [ id ]) t
 [id]' = [id]
 
-ass' : Sub~ ((σ ∘ δ) ∘ ν) (σ ∘ δ ∘ ν)
+ass' : Sub~ (σ ∘ δ ∘ ν) ((σ ∘ δ) ∘ ν)
 ass' = ass
 
 ,∘' :  Sub~ ((_,_ {s = s} σ t) ∘ δ) (σ ∘ δ , t [ δ ])
@@ -162,46 +166,42 @@ _⊢_ : (Γ : Con) → Ty → Set
 _⊢_≣_ : (Γ : Con) → Tm Γ A → Tm Γ A → Prop
 Γ ⊢ t ≣ u = Tm~ t u
 
-infixl 5 _!_
-
-_!_ : Tm Γ (A ⇒ B) → Tm Γ A → Tm Γ B
-f ! x = app f x
-
 -- Variables
 
 data Var : Con → String → Ty → Set where
-  instance
-    vz : Var (Γ , s ∶ A) s A
-    vs : {{Var Γ s' A}} → Var (Γ , s ∶ B) s' A
+  instance vz : Var (Γ , s ∶ A) s A
+  instance vs : {x : Var Γ s' A} → Var (Γ , s ∶ B) s' A
 
 get : Var Γ s A → Tm Γ A
 get vz = q
-get (vs {{x}}) = (get x) [ p ]
+get (vs {x = x}) = (get x) [ p ]
 
 var : (s : String) → {{v : Var Γ s A}} → Tm Γ A
 var _ {{v}} = get v
 
--- Basic
+-- v2 : ∀ {B C} → Tm (Γ , A , B , C) A
+-- v2 = v1 [ p ]
 
-β-is-definitional : ∙ , "y" ∶ ι ⊢ app (lam "x" (var "x")) t ≣ t
+-- -- Basic
+
+β-is-definitional : ∙ , ι ⊢ app (lam "x" (?)) t ≣ t
 β-is-definitional = rfl
 
-β-is-definitional-2 : ∙ , "y" ∶ ι ⊢ lam "x" (lam "z" (var "x")) ! (var "y") ! (var "y") ≣ var "y"
-β-is-definitional-2 = rfl
+-- β-is-definitional-2 : ∙ , ι ⊢ lam (lam v1) ! v0 ! v0 ≣ v0
+-- β-is-definitional-2 = rfl
 
-ℕ : Ty
-ℕ = ι ⇒ (ι ⇒ ι) ⇒ ι
+-- ℕ : Ty
+-- ℕ = ι ⇒ (ι ⇒ ι) ⇒ ι
 
-`0` : Γ ⊢ ℕ
-`0` = lam "z" (lam "s" (var "z"))
+-- `0` : Γ ⊢ ℕ
+-- `0` = lam (lam v1)
 
-`+1` : Γ ⊢ ℕ ⇒ ℕ
-`+1` = lam "n'" (lam "z" (lam "s" (var "s" ! (var "n'" ! var "z" ! var "s"))))
+-- `+1` : Γ ⊢ ℕ ⇒ ℕ
+-- `+1` = lam (lam (lam (v0 ! (v2 ! v1 ! v0))))
 
-rec-ℕ : Γ ⊢ ι ⇒ (ι ⇒ ι) ⇒ ℕ ⇒ ι
-rec-ℕ = lam "base" (lam "rec" (lam "subject" (var "subject" ! var "base" ! var "rec")))
+-- rec-ℕ : Γ ⊢ ι ⇒ (ι ⇒ ι) ⇒ ℕ ⇒ ι
+-- rec-ℕ = lam (lam (lam (v0 ! v2 ! v1)))
 
-rec-ℕ-0 : ∙ , "x" ∶ ι , "y" ∶ ι ⇒ ι ⊢ rec-ℕ ! var "x" ! var "y" ! `0` ≣ var "x"
-rec-ℕ-0 = rfl
-
+-- rec-ℕ-0 : ∙ , ι ⊢ rec-ℕ ! v0 ! (lam v0) ! `0` ≣ v0
+-- rec-ℕ-0 = {!   !}
 
