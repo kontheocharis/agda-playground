@@ -27,7 +27,7 @@ open import Agda.Builtin.String
 --
 -- We need not quotient the syntax either; Agda allows us to register any relation
 -- as a rewriting relation. This way, we can still compile the syntax as we
--- please, without needing to preserve the setoid structure.
+-- please---without needing to preserve the setoid structure.
 --
 -- To deal with de-Brujin indices, we store names in contexts, and use Agda's
 -- instance resolution to search for de-Brujin terms that satisfy the given name.
