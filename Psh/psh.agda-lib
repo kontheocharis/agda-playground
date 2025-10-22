@@ -1,0 +1,3 @@
+name: psh
+depend: standard-library
+include: .
